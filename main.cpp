@@ -96,12 +96,14 @@ string generate_name(const string& basename, const Date& date)
 }
 
 void write_average_area(const std::vector<Img>& infected, const char* raster_name,
-                        double ew_res, double ns_res)
+                        double ew_res,
+                        double ns_res,
+                        const std::vector<std::vector<int>>& suitable_cells)
 {
     struct History hist;
     double avg = 0;
     for (unsigned i = 0; i < infected.size(); i++) {
-        avg += area_of_infected(infected[i], ew_res, ns_res);
+        avg += area_of_infected(infected[i], ew_res, ns_res, suitable_cells);
     }
     avg /= infected.size();
     string avg_string = "Average infected area: " + std::to_string(avg);
@@ -892,6 +894,9 @@ int main(int argc, char *argv[])
     // create the initial suspectible oaks image
     Img S_species_rast = species_rast - I_species_rast;
 
+    // Indices of suitable cells (i, j of all hosts)
+    std::vector<std::vector<int>> suitable_cells = get_suitable_cells(species_rast);
+
     std::vector<string> moisture_names;
     std::vector<string> temperature_names;
     std::vector<string> weather_names;
@@ -988,12 +993,21 @@ int main(int argc, char *argv[])
     std::vector<std::vector<std::tuple<int, int> > > outside_spores(num_runs);
 
     // spread rate initialization
-    std::vector<SpreadRate<Img>> spread_rates(num_runs,
-                                              SpreadRate<Img>(I_species_rast, window.ew_res, window.ns_res, config.rate_num_steps()));
-
+    std::vector<SpreadRate<Img>> spread_rates(
+        num_runs,
+        SpreadRate<Img>(
+            I_species_rast,
+            window.ew_res,
+            window.ns_res,
+            config.rate_num_steps(),
+            suitable_cells));
     // Unused quarantine escape tracking
     Img empty;
-    QuarantineEscape<Img> quarantine(empty, config.ew_res, config.ns_res, 0);
+    QuarantineEscape<Img> quarantine(empty,
+                                     config.ew_res,
+                                     config.ns_res,
+                                     0,
+                                     suitable_cells);
     // Unused movements
     std::vector<std::vector<int>> movements;
 
@@ -1051,8 +1065,8 @@ int main(int argc, char *argv[])
                                 spread_rates[run],
                                 quarantine,
                                 empty,
-                                movements
-                                );
+                                movements,
+                                suitable_cells);
                     ++weather_step;
                 }
             }
@@ -1082,7 +1096,7 @@ int main(int argc, char *argv[])
                                         "Average occurrence from all stochastic runs",
                                         interval.end_date());
                         write_average_area(inf_species_rasts, name.c_str(),
-                                           window.ew_res, window.ns_res);
+                                           window.ew_res, window.ns_res, suitable_cells);
                     }
                     if (opt.stddev_series->answer) {
                         DImg stddev(I_species_rast.rows(), I_species_rast.cols(), 0);
@@ -1136,7 +1150,7 @@ int main(int argc, char *argv[])
                             "Average occurrence from all stochastic runs",
                             interval.end_date());
             write_average_area(inf_species_rasts, opt.average->answer,
-                               window.ew_res, window.ns_res);
+                               window.ew_res, window.ns_res, suitable_cells);
         }
         if (opt.stddev->answer) {
             DImg stddev(average_raster.rows(), average_raster.cols(), 0);

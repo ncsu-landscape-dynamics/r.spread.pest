@@ -25,6 +25,7 @@ extern "C" {
 #include <grass/raster.h>
 }
 
+#include <vector>
 #include <string>
 #include <type_traits>
 
@@ -342,6 +343,20 @@ inline pops::Raster<Integer> raster_from_grass_integer(
         )
 {
     return raster_from_grass<Integer>(name, null_policy);
+}
+
+/** Get indices of suitable cell as a list (vector) of pairs (vectors of 2) */
+std::vector<std::vector<int>> get_suitable_cells(pops::Raster<Integer> raster)
+{
+    std::vector<std::vector<int>> cells;
+    for (int row = 0; row < raster.rows(); ++row) {
+        for (int col = 0; col < raster.cols(); ++col) {
+            if (raster(row, col) > 0) {
+                cells.push_back({row, col});
+            }
+        }
+    }
+    return cells;
 }
 
 // TODO: update names

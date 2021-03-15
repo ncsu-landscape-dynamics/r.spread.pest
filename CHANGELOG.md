@@ -17,6 +17,10 @@ pops-core.
 
 ## [Unreleased]
 
+### Changed
+
+- Code is using list of suitable cell indices as a spatial index.
+
 ## [1.0.2] - 2020-10-09
 
 - [Patch release of rpops](https://github.com/ncsu-landscape-dynamics/rpops/releases/tag/v1.0.2) (no changes for r.pops.spread)
